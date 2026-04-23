@@ -169,7 +169,23 @@ void *mm_calloc(size_t nmemb, size_t size) {
     return ptr;
 }
 
-void mm_checkheap(void) {}
+void mm_checkheap(void) {
+    void *bp;
+    // Check prologue
+    if (GET_SIZE(HDRP(heap_listp)) != DSIZE || !GET_ALLOC(HDRP(heap_listp)))
+        printf("Bad prologue header\n");
+
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+        // Check alignment
+        if ((size_t)bp % 8 != 0) printf("Block %p not aligned\n", bp);
+        // Check header/footer match
+        if (GET(HDRP(bp)) != GET(FTRP(bp))) printf("Header/footer mismatch at %p\n", bp);
+    }
+
+    // Check epilogue
+    if (GET_SIZE(HDRP(bp)) != 0 || !GET_ALLOC(HDRP(bp)))
+        printf("Bad epilogue header\n");
+}
 
 /* Wait, the above insert_node and delete_node need to be careful about pointer sizes.
    Since it's a 64-bit machine but heap is < 4GB, we can use 32-bit offsets or pointers.
